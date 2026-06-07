@@ -3,87 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>時限式セルフリマインダー </title>
+    <title>時限式リマインダー</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://jsdelivr.net" rel="stylesheet">
-    <!-- カスタムCSS -->
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <div class="container d-flex align-items-center justify-content-center min-vh-100">
-        <div class="card shadow-lg border-0 p-4 justify-content-center" style="max-width: 500px; width: 100%;">
-            <div class="card-body">
-                <h2 class="card-title text-center mb-2 fw-bold text-primary">未来の自分への手紙</h2>
-                <p class="text-muted text-center small mb-4">指定した日時に、登録したメッセージが届きます。</p>
-                
-                <!-- 通知アラート -->
-                <div id="alertMessage" class="alert d-none" role="alert"></div>
-
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h1 class="text-center mb-4 text-primary fw-bold">⏰ 時限式リマインダー</h1>
+            
+            <!-- リマインダー登録フォーム -->
+            <div class="card p-4 mb-4">
                 <form id="reminderForm">
-                    <!-- メールアドレス -->
                     <div class="mb-3">
-                        <label for="email" class="form-label fw-semibold">メールアドレス</label>
-                        <input type="email" class="form-control" id="email" placeholder="example@email.com" required>
+                        <label for="title" class="form-label fw-bold">リマインダー内容</label>
+                        <input type="text" class="form-control" id="title" placeholder="例: お湯を止める、ストレッチする" required>
                     </div>
-
-                    <!-- お届け日時 -->
                     <div class="mb-3">
-                        <label for="sendAt" class="form-label fw-semibold">日時（分単位まで）</label>
-                        <input type="datetime-local" class="form-control" id="sendAt" required>
+                        <label for="delaySeconds" class="form-label fw-bold">何秒後に通知する？</label>
+                        <input type="number" class="form-control" id="delaySeconds" min="1" placeholder="例: 10" required>
                     </div>
-
-                    <!-- メッセージ内容 -->
-                    <div class="mb-4">
-                        <label for="content" class="form-label fw-semibold">メッセージ</label>
-                        <textarea class="form-control" id="content" rows="5" placeholder="ここにテキストを挿入" required></textarea>
-                    </div>
-
-                    <!-- 送信ボタン -->
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2">送信</button>
+                    <button type="submit" class="btn btn-primary w-100">タイマーをセット</button>
                 </form>
             </div>
+
+            <!-- リマインダー一覧表示用 -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="h5 mb-0">セットされたタスク</h3>
+                <button id="clearBtn" class="btn btn-sm btn-outline-danger">終了分をクリア</button>
+            </div>
+            
+            <ul id="reminderList" class="list-group">
+                <!-- JavaScriptでここに動的追加されます -->
+            </ul>
         </div>
     </div>
+</div>
 
-    <!-- JavaScript処理 -->
-    <script>
-        document.getElementById('reminderForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+<!-- クライアントサイドJavaScript -->
+<script>
+    const reminderForm = document.getElementById('reminderForm');
+    const reminderList = document.getElementById('reminderList');
+    const clearBtn = document.getElementById('clearBtn');
 
-            const email = document.getElementById('email').value;
-            const content = document.getElementById('content').value;
-            
-            // HTMLのdatetime-local形式 (YYYY-MM-DDTHH:MM) を データベース用 (YYYY-MM-DD HH:MM) に変換
-            const rawSendAt = document.getElementById('sendAt').value;
-            const send_at = rawSendAt.replace('T', ' ');
+    // サーバーからデータを取得して画面に表示
+    async function loadReminders() {
+        const res = await fetch('/api/reminders');
+        const data = await res.json();
+        
+        reminderList.innerHTML = '';
+        if (data.length === 0) {
+            reminderList.innerHTML = '<li class="list-group-item text-muted text-center">登録されたリマインダーはありません</li>';
+            return;
+        }
 
-            const alertMessage = document.getElementById('alertMessage');
-
-            try {
-                const response = await fetch('/api/reminders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, content, send_at })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    alertMessage.className = "alert alert-success";
-                    alertMessage.innerText = "メッセージを未来へ預かりました！";
-                    document.getElementById('reminderForm').reset();
-                } else {
-                    alertMessage.className = "alert alert-danger";
-                    alertMessage.innerText = data.error || "エラーが発生しました。";
-                }
-            } catch (error) {
-                alertMessage.className = "alert alert-danger";
-                alertMessage.innerText = "サーバーとの通信に失敗しました。";
-            }
-            
-            alertMessage.classList.remove('d-none');
+        data.forEach(item => {
+            const li = document.createElement('li');
+            li.className = `list-group-item d-flex justify-content-between align-items-center ${item.status.includes('⏰') ? 'list-group-item-warning' : ''}`;
+            li.innerHTML = `
+                <div>
+                    <span class="fw-bold">${item.title}</span>
+                    <small class="text-muted d-block">通知予定: ${item.triggerAt} (${item.delaySeconds}秒設定)</small>
+                </div>
+                <span class="badge ${item.status.includes('⏰') ? 'bg-danger' : 'bg-secondary'} rounded-pill">${item.status}</span>
+            `;
+            reminderList.appendChild(li);
         });
-    </script>
+    }
+
+    // 新規登録の送信処理
+    reminderForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('title').value;
+        const delaySeconds = document.getElementById('delaySeconds').value;
+
+        await fetch('/api/reminders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, delaySeconds })
+        });
+
+        reminderForm.reset();
+        loadReminders();
+    });
+
+    // 終了タスクのクリア処理
+    clearBtn.addEventListener('click', async () => {
+        await fetch('/api/reminders', { method: 'DELETE' });
+        loadReminders();
+    });
+
+    // 定期的に画面を更新（ステータスの変化を捉えるため1秒おきにリロード）
+    setInterval(loadReminders, 1000);
+    // 初回読み込み
+    loadReminders();
+</script>
+
 </body>
 </html>
