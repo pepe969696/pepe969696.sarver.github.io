@@ -1,12 +1,15 @@
 {
-  "name": "timer-reminder-app",
+  "name": "time-capsule-reminder",
   "version": "1.0.0",
-  "description": "Timed reminder web application",
+  "description": "時限式・セルフリマインダー",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3",
+    "sqlite3": "^5.1.7"
   }
 }

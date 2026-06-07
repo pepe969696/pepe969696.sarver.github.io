@@ -1,0 +1,21 @@
+body {
+    background-color: #4fcf89;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.card {
+    border-radius: 15px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #a8b5ee 0%, #c08cf5 100%);
+    border: none;
+    transition: transform 0.2s;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
