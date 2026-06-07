@@ -46,7 +46,7 @@ app.post('/api/reminders', (req, res) => {
         if (reminder) {
             reminder.status = '⏰ 時間です！';
             console.log(`[リマインダー通知]: "${reminder.title}" の時間になりました！`);
-            process.stdout.write('\x07');
+            
         }
     }, delayMs);
 
