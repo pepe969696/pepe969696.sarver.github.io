@@ -4,7 +4,7 @@
   "description": "Timed reminder web application",
   "main": "server.js",
   "scripts": {
-    "start": "server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2"
